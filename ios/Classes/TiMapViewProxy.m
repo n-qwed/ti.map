@@ -215,6 +215,15 @@
 	}
 }
 
+-(void)addDirection:(id)arg
+{
+	ENSURE_SINGLE_ARG(arg,NSObject);
+    
+	if ([self viewAttached]) {
+        TiThreadPerformOnMainThread(^{[(TiMapView*)[self view] addDirection:arg];}, NO);
+	}
+}
+
 -(void)addAnnotation:(id)arg
 {
 	ENSURE_SINGLE_ARG(arg,NSObject);

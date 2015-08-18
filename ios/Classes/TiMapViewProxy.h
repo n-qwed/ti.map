@@ -31,6 +31,7 @@
 
 -(TiMapAnnotationProxy*)annotationFromArg:(id)arg;
 
+-(void)addDirection:(id)args;
 -(void)addAnnotation:(id)args;
 -(void)addAnnotations:(id)args;
 -(void)removeAnnotation:(id)args;

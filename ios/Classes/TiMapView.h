@@ -54,6 +54,7 @@ NSString * const VIEW_TYPE_POLYLINE = @"polyline";
 -(MKMapView*)map;
 
 #pragma mark Public APIs
+-(void)addDirection:(id)args;
 -(void)addAnnotation:(id)args;
 -(void)addAnnotations:(id)args;
 -(void)setAnnotations_:(id)value;

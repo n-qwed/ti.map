@@ -203,6 +203,80 @@
 
 #pragma mark Public APIs
 
+-(CLLocationCoordinate2D)locationCoordinatesFromDict:(NSDictionary*)dict
+{
+    return CLLocationCoordinate2DMake([TiUtils doubleValue:[dict valueForKey:@"latitude"]], [TiUtils doubleValue:[dict valueForKey:@"longitude"]]);
+}
+
+
+-(void)addDirection:(id)args
+{
+	ENSURE_SINGLE_ARG(args,NSObject);
+	ENSURE_UI_THREAD(addDirection,args);
+
+    id source = [args valueForKey:@"source"];
+    id destination = [args valueForKey:@"destination"];
+    
+    // 六本木
+    CLLocationCoordinate2D fromCoordinate = [self locationCoordinatesFromDict:source];
+    // 渋谷
+    CLLocationCoordinate2D toCoordinate = [self locationCoordinatesFromDict:destination];
+    /*
+    // 銀座
+    CLLocationCoordinate2D gCoordinate = CLLocationCoordinate2DMake(35.671960, 139.763968);
+    // 水天宮
+    CLLocationCoordinate2D sCoordinate = CLLocationCoordinate2DMake(35.681617, 139.786370);
+    // 湯島
+    CLLocationCoordinate2D ysCoordinate = CLLocationCoordinate2DMake(35.708245, 139.769923);
+    // 祐天寺
+    CLLocationCoordinate2D yuCoordinate = CLLocationCoordinate2DMake(35.637944, 139.689693);
+    */
+    
+    [self routeView:&fromCoordinate to:&toCoordinate];
+    /*
+    [self routeView:&toCoordinate to:&gCoordinate];
+    [self routeView:&gCoordinate to:&sCoordinate];
+    [self routeView:&ysCoordinate to:&yuCoordinate];
+    [self routeView:&yuCoordinate to:&ysCoordinate];
+     */
+}
+     
+- (void)routeView:(CLLocationCoordinate2D *)fromCoordinate to:(CLLocationCoordinate2D *)toCoordinate
+{
+    // CLLocationCoordinate2D から MKPlacemark を生成
+    MKPlacemark *fromPlacemark = [[MKPlacemark alloc] initWithCoordinate:*fromCoordinate
+                                                       addressDictionary:nil];
+    MKPlacemark *toPlacemark   = [[MKPlacemark alloc] initWithCoordinate:*toCoordinate
+                                                       addressDictionary:nil];
+    // MKPlacemark から MKMapItem を生成
+    MKMapItem *fromItem = [[MKMapItem alloc] initWithPlacemark:fromPlacemark];
+    MKMapItem *toItem   = [[MKMapItem alloc] initWithPlacemark:toPlacemark];
+    
+    // MKMapItem をセットして MKDirectionsRequest を生成
+    MKDirectionsRequest *request = [[MKDirectionsRequest alloc] init];
+    request.source = fromItem;
+    request.destination = toItem;
+    request.requestsAlternateRoutes = YES;
+    
+    // MKDirectionsRequest から MKDirections を生成
+    MKDirections *directions = [[MKDirections alloc] initWithRequest:request];
+    
+    // 経路検索を実行
+    [directions calculateDirectionsWithCompletionHandler:^(MKDirectionsResponse *response, NSError *error)
+     {
+         if (error) return;
+         
+         if ([response.routes count] > 0)
+         {
+             MKRoute *route = [response.routes objectAtIndex:0];
+             NSLog(@"distance: %.2f meter", route.distance);
+             
+             // 地図上にルートを描画
+             [self.map addOverlay:route.polyline];
+         }
+     }];
+}
+
 
 -(void)addAnnotation:(id)args
 {
@@ -747,10 +821,22 @@
 }
 
 // Delegate for >= iOS 7
+// 地図上に描画するルートの色などを指定（これを実装しないと何も表示されない）
 - (MKOverlayRenderer *)mapView:(MKMapView *)mapView rendererForOverlay:(id < MKOverlay >)overlay
 {
-    return (MKOverlayRenderer *)CFDictionaryGetValue(mapObjects2View, overlay);
+    if ([overlay isKindOfClass:[MKPolyline class]])
+    {
+        MKPolyline *route = overlay;
+        MKPolylineRenderer *routeRenderer = [[MKPolylineRenderer alloc] initWithPolyline:route];
+        routeRenderer.lineWidth = 2.0;
+        routeRenderer.strokeColor = [UIColor redColor];
+        return routeRenderer;
+    }
+    else {
+        return nil;
+    }
 }
+
 
 // Delegate for < iOS 7
 // MKPolylineView is deprecated in iOS 7, still here for backward compatibility.
